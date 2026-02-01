@@ -31,6 +31,43 @@ def get_factory_data():
     y = np.array([[1],[1],[1],[1],[1], [0],[0], [0],[0], [0]])
     return X, y
 
+# --- Visualisierung der Netzwerk-Struktur (ERWEITERT) ---
+def draw_neural_network(n_hidden, w1=None, w2=None):
+    fig, ax = plt.subplots(figsize=(5, 3))
+    layer_sizes = [2, n_hidden, 1]
+    x_pos = [1, 2, 3]
+    
+    # Normalisierungs-Funktion für Linienstärken
+    def get_lw(weight):
+        if weight is None: return 1
+        # Skaliere absolute Gewichte für die Sichtbarkeit (zwischen 0.5 und 5)
+        return 0.5 + (np.abs(weight) / np.max(np.abs([w1.max(), w2.max()] if w1 is not None else [1]))) * 4
+
+    # Zeichne Verbindungen (Layer 0 -> Layer 1)
+    for n1 in range(layer_sizes[0]):
+        for n2 in range(layer_sizes[1]):
+            y1 = n1 - (layer_sizes[0]-1)/2
+            y2 = n2 - (layer_sizes[1]-1)/2
+            lw = get_lw(w1[n1, n2]) if w1 is not None else 1
+            color = '#1f77b4' if (w1 is not None and w1[n1, n2] > 0) else 'gray'
+            ax.plot([x_pos[0], x_pos[1]], [y1, y2], c=color, alpha=0.5, lw=lw)
+
+    # Zeichne Verbindungen (Layer 1 -> Layer 2)
+    for n1 in range(layer_sizes[1]):
+        for n2 in range(layer_sizes[2]):
+            y1 = n1 - (layer_sizes[1]-1)/2
+            y2 = n2 - (layer_sizes[2]-1)/2
+            lw = get_lw(w2[n1, n2]) if w2 is not None else 1
+            color = '#1f77b4' if (w2 is not None and w2[n1, n2] > 0) else 'gray'
+            ax.plot([x_pos[1], x_pos[2]], [y1, y2], c=color, alpha=0.5, lw=lw)
+
+    for i, size in enumerate(layer_sizes):
+        for n in range(size):
+            y = n - (size-1)/2
+            ax.scatter(x_pos[i], y, s=300, c='white', edgecolors='#1f77b4', zorder=3)
+    ax.axis('off')
+    return fig
+
 # --- Sidebar: Architektur-Einstellungen ---
 with st.sidebar:
     st.header("🧱 Netzwerk-Design")
@@ -39,40 +76,25 @@ with st.sidebar:
     epochs = st.slider("Trainings-Epochen", 500, 5000, 2000)
     train_button = st.button("Training starten 🚀")
 
-# --- Visualisierung der Netzwerk-Struktur ---
-def draw_neural_network(n_hidden):
-    fig, ax = plt.subplots(figsize=(5, 3))
-    layer_sizes = [2, n_hidden, 1]
-    x_pos = [1, 2, 3]
-    for i in range(len(layer_sizes) - 1):
-        for n1 in range(layer_sizes[i]):
-            for n2 in range(layer_sizes[i+1]):
-                y1 = n1 - (layer_sizes[i]-1)/2
-                y2 = n2 - (layer_sizes[i+1]-1)/2
-                ax.plot([x_pos[i], x_pos[i+1]], [y1, y2], c='gray', alpha=0.3, lw=1)
-    for i, size in enumerate(layer_sizes):
-        for n in range(size):
-            y = n - (size-1)/2
-            ax.scatter(x_pos[i], y, s=300, c='white', edgecolors='#1f77b4', zorder=3)
-    ax.axis('off')
-    return fig
-
 # --- Layout ---
 col_net, col_map = st.columns([1, 1.5])
 
-with col_net:
-    st.subheader("Architektur")
-    st.pyplot(draw_neural_network(hidden_nodes))
-    st.caption("Jede Linie ist eine mathematische Gewichtung, die die KI anpasst.")
+# Initialer Zustand (ohne Gewichte)
+if 'w1' not in st.session_state:
+    with col_net:
+        st.subheader("Architektur")
+        st.pyplot(draw_neural_network(hidden_nodes))
+        st.caption("Jede Linie ist eine mathematische Gewichtung, die die KI anpasst.")
 
 # --- Training ---
 if train_button:
     with col_map:
         st.subheader("Die KI lernt die Qualitätsregeln...")
         X, y = get_factory_data()
-        w1 = np.random.uniform(size=(2, hidden_nodes))
-        w2 = np.random.uniform(size=(hidden_nodes, 1))
+        w1 = np.random.uniform(-1, 1, size=(2, hidden_nodes))
+        w2 = np.random.uniform(-1, 1, size=(hidden_nodes, 1))
         plot_spot = st.empty()
+        net_spot = col_net.empty() # Platzhalter für das Live-Netz-Update
 
         for i in range(epochs):
             l1 = sigmoid(np.dot(X, w1))
@@ -84,20 +106,23 @@ if train_button:
             w1 += X.T.dot(d_l1) * lr
 
             if i % 250 == 0:
+                # Update Karte
                 fig_m, ax_m = plt.subplots()
                 res = 50
                 _x, _y = np.meshgrid(np.linspace(0,1,res), np.linspace(0,1,res))
                 grid = np.c_[_x.ravel(), _y.ravel()]
                 z = sigmoid(np.dot(sigmoid(np.dot(grid, w1)), w2)).reshape(_x.shape)
-                
-                # Plotting the landscape
-                contour = ax_m.contourf(_x, _y, z, levels=20, cmap='RdYlGn', alpha=0.8)
+                ax_m.contourf(_x, _y, z, levels=20, cmap='RdYlGn', alpha=0.8)
                 ax_m.scatter(X[:,0], X[:,1], c=y.flatten(), cmap='RdYlGn', edgecolors='k', s=60)
                 ax_m.set_xlabel("Temperatur")
                 ax_m.set_ylabel("Vibration")
                 plot_spot.pyplot(fig_m)
                 plt.close()
-        
+                
+                # Update Netzwerk-Grafik (Live-Gewichte)
+                net_spot.pyplot(draw_neural_network(hidden_nodes, w1, w2))
+
+        st.session_state.w1, st.session_state.w2 = w1, w2
         st.success("✅ Modell bereit für die Produktion!")
         
         # --- ERWEITERTE LEGENDE ---
@@ -105,7 +130,6 @@ if train_button:
         st.subheader("🎨 Legende der Visualisierung")
         
         leg1, leg2 = st.columns(2)
-        
         with leg1:
             st.markdown("**1. Die Datenpunkte (Einzelne Kreise):**")
             st.write("Dies sind die historischen Messwerte aus der Fabrik.")
@@ -117,6 +141,6 @@ if train_button:
             st.write("Dies zeigt, wie die KI den gesamten Bereich bewertet.")
             st.markdown("* 🟩 **Grüner Bereich:** Hier würde die KI neue Teile als 'Gut' einstufen.")
             st.markdown("* 🟥 **Roter Bereich:** Hier würde die KI neue Teile als 'Ausschuss' ablehnen.")
-            st.markdown("* 🟨 **Gelbe Übergänge:** Hier ist sich die KI unsicher (ca. 50% Wahrscheinlichkeit).")
-            
-        st.info("**Merke:** Das Ziel des Trainings ist es, dass das Hintergrundfeld so weit wie möglich mit den Farben der darauf liegenden Punkte übereinstimmt.")
+            st.markdown("* 🟨 **Gelbe Übergänge:** Hier ist sich die KI unsicher.")
+
+        st.info("**Neu: Dicke der Verbindungslinien:** Je dicker eine Linie im Netzwerk-Diagramm, desto stärker ist der Einfluss dieses Pfades auf die Entscheidung. Blaue Linien stehen für positive, graue für negative Einflüsse.")
