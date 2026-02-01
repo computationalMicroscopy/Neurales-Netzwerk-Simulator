@@ -31,16 +31,15 @@ def get_factory_data():
     y = np.array([[1],[1],[1],[1],[1], [0],[0], [0],[0], [0]])
     return X, y
 
-# --- Visualisierung der Netzwerk-Struktur (ERWEITERT) ---
+# --- Visualisierung der Netzwerk-Struktur (ERWEITERT MIT BESCHRIFTUNG) ---
 def draw_neural_network(n_hidden, w1=None, w2=None):
-    fig, ax = plt.subplots(figsize=(5, 3))
+    fig, ax = plt.subplots(figsize=(6, 4))
     layer_sizes = [2, n_hidden, 1]
     x_pos = [1, 2, 3]
     
     # Normalisierungs-Funktion für Linienstärken
     def get_lw(weight):
         if weight is None: return 1
-        # Skaliere absolute Gewichte für die Sichtbarkeit (zwischen 0.5 und 5)
         return 0.5 + (np.abs(weight) / np.max(np.abs([w1.max(), w2.max()] if w1 is not None else [1]))) * 4
 
     # Zeichne Verbindungen (Layer 0 -> Layer 1)
@@ -50,7 +49,7 @@ def draw_neural_network(n_hidden, w1=None, w2=None):
             y2 = n2 - (layer_sizes[1]-1)/2
             lw = get_lw(w1[n1, n2]) if w1 is not None else 1
             color = '#1f77b4' if (w1 is not None and w1[n1, n2] > 0) else 'gray'
-            ax.plot([x_pos[0], x_pos[1]], [y1, y2], c=color, alpha=0.5, lw=lw)
+            ax.plot([x_pos[0], x_pos[1]], [y1, y2], c=color, alpha=0.3, lw=lw)
 
     # Zeichne Verbindungen (Layer 1 -> Layer 2)
     for n1 in range(layer_sizes[1]):
@@ -59,13 +58,33 @@ def draw_neural_network(n_hidden, w1=None, w2=None):
             y2 = n2 - (layer_sizes[2]-1)/2
             lw = get_lw(w2[n1, n2]) if w2 is not None else 1
             color = '#1f77b4' if (w2 is not None and w2[n1, n2] > 0) else 'gray'
-            ax.plot([x_pos[1], x_pos[2]], [y1, y2], c=color, alpha=0.5, lw=lw)
+            ax.plot([x_pos[1], x_pos[2]], [y1, y2], c=color, alpha=0.3, lw=lw)
 
+    # Zeichne Neuronen und Beschriftungen
+    node_labels = {
+        0: ["Temperatur", "Vibration"],
+        1: [f"H{i+1}" for i in range(n_hidden)],
+        2: ["Urteil"]
+    }
+    
     for i, size in enumerate(layer_sizes):
         for n in range(size):
             y = n - (size-1)/2
-            ax.scatter(x_pos[i], y, s=300, c='white', edgecolors='#1f77b4', zorder=3)
+            ax.scatter(x_pos[i], y, s=400, c='white', edgecolors='#1f77b4', zorder=4)
+            # Beschriftung der Knoten
+            label = node_labels[i][n]
+            ax.text(x_pos[i], y - 0.35 if i != 1 else y, label, 
+                    ha='center', va='top' if i != 1 else 'center', 
+                    fontsize=8, fontweight='bold', zorder=5)
+            
+    # Layer-Überschriften
+    titles = ["Input\n(Sensoren)", "Hidden Layer\n(Verarbeitung)", "Output\n(Ergebnis)"]
+    for i, title in enumerate(titles):
+        ax.text(x_pos[i], 1.5 + (n_hidden*0.1), title, ha='center', fontsize=10, fontweight='bold', color='#333')
+
     ax.axis('off')
+    ax.set_xlim(0.5, 3.5)
+    ax.set_ylim(-2.5, 2.5)
     return fig
 
 # --- Sidebar: Architektur-Einstellungen ---
@@ -79,7 +98,7 @@ with st.sidebar:
 # --- Layout ---
 col_net, col_map = st.columns([1, 1.5])
 
-# Initialer Zustand (ohne Gewichte)
+# Initialer Zustand
 if 'w1' not in st.session_state:
     with col_net:
         st.subheader("Architektur")
@@ -94,7 +113,7 @@ if train_button:
         w1 = np.random.uniform(-1, 1, size=(2, hidden_nodes))
         w2 = np.random.uniform(-1, 1, size=(hidden_nodes, 1))
         plot_spot = st.empty()
-        net_spot = col_net.empty() # Platzhalter für das Live-Netz-Update
+        net_spot = col_net.empty()
 
         for i in range(epochs):
             l1 = sigmoid(np.dot(X, w1))
@@ -119,7 +138,7 @@ if train_button:
                 plot_spot.pyplot(fig_m)
                 plt.close()
                 
-                # Update Netzwerk-Grafik (Live-Gewichte)
+                # Update Netzwerk-Grafik
                 net_spot.pyplot(draw_neural_network(hidden_nodes, w1, w2))
 
         st.session_state.w1, st.session_state.w2 = w1, w2
@@ -143,4 +162,4 @@ if train_button:
             st.markdown("* 🟥 **Roter Bereich:** Hier würde die KI neue Teile als 'Ausschuss' ablehnen.")
             st.markdown("* 🟨 **Gelbe Übergänge:** Hier ist sich die KI unsicher.")
 
-        st.info("**Neu: Dicke der Verbindungslinien:** Je dicker eine Linie im Netzwerk-Diagramm, desto stärker ist der Einfluss dieses Pfades auf die Entscheidung. Blaue Linien stehen für positive, graue für negative Einflüsse.")
+        st.info("**Merke:** Die Beschriftung im Netzwerk zeigt, wie die Sensordaten durch die 'Hidden Neuronen' (H1, H2...) fließen, um am Ende zum Qualitäts-Urteil zu gelangen. Die dicken Linien zeigen dabei die wichtigsten Entscheidungswege.")
