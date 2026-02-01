@@ -100,11 +100,23 @@ if train_button:
         
         st.success("✅ Modell bereit für die Produktion!")
         
-        # --- NEU: Detaillierte Legende ---
+        # --- ERWEITERTE LEGENDE ---
         st.markdown("---")
-        st.subheader("🎨 Legende der KI-Entscheidung")
-        c1, c2, c3 = st.columns(3)
-        c1.markdown("🔴 **Tiefrot:** Die KI ist sich sicher: **Ausschuss** (Wahrscheinlichkeit nahe 0).")
-        c2.markdown("🟡 **Gelb/Beige:** Grauzone / Unsicherheit. Hier ist die Entscheidung 'knapp'.")
-        c3.markdown("🟢 **Tiefgrün:** Die KI ist sich sicher: **Gutteil** (Wahrscheinlichkeit nahe 1).")
-        st.info("**Experten-Tipp:** Beobachte während des Trainings, wie die gelben Übergangszonen schmaler werden. Das bedeutet, dass die KI lernt, schärfere Grenzen zwischen den Qualitäten zu ziehen.")
+        st.subheader("🎨 Legende der Visualisierung")
+        
+        leg1, leg2 = st.columns(2)
+        
+        with leg1:
+            st.markdown("**1. Die Datenpunkte (Einzelne Kreise):**")
+            st.write("Dies sind die historischen Messwerte aus der Fabrik.")
+            st.markdown("* 🟢 **Punkt ist Grün:** Dieses Bauteil war ein Gutteil.")
+            st.markdown("* 🔴 **Punkt ist Rot:** Dieses Bauteil war Ausschuss.")
+            
+        with leg2:
+            st.markdown("**2. Das Hintergrundfeld (Die 'Wissens-Karte'):**")
+            st.write("Dies zeigt, wie die KI den gesamten Bereich bewertet.")
+            st.markdown("* 🟩 **Grüner Bereich:** Hier würde die KI neue Teile als 'Gut' einstufen.")
+            st.markdown("* 🟥 **Roter Bereich:** Hier würde die KI neue Teile als 'Ausschuss' ablehnen.")
+            st.markdown("* 🟨 **Gelbe Übergänge:** Hier ist sich die KI unsicher (ca. 50% Wahrscheinlichkeit).")
+            
+        st.info("**Merke:** Das Ziel des Trainings ist es, dass das Hintergrundfeld so weit wie möglich mit den Farben der darauf liegenden Punkte übereinstimmt.")
