@@ -89,10 +89,22 @@ if train_button:
                 _x, _y = np.meshgrid(np.linspace(0,1,res), np.linspace(0,1,res))
                 grid = np.c_[_x.ravel(), _y.ravel()]
                 z = sigmoid(np.dot(sigmoid(np.dot(grid, w1)), w2)).reshape(_x.shape)
-                ax_m.contourf(_x, _y, z, levels=20, cmap='RdYlGn', alpha=0.8)
+                
+                # Plotting the landscape
+                contour = ax_m.contourf(_x, _y, z, levels=20, cmap='RdYlGn', alpha=0.8)
                 ax_m.scatter(X[:,0], X[:,1], c=y.flatten(), cmap='RdYlGn', edgecolors='k', s=60)
                 ax_m.set_xlabel("Temperatur")
                 ax_m.set_ylabel("Vibration")
                 plot_spot.pyplot(fig_m)
                 plt.close()
+        
         st.success("✅ Modell bereit für die Produktion!")
+        
+        # --- NEU: Detaillierte Legende ---
+        st.markdown("---")
+        st.subheader("🎨 Legende der KI-Entscheidung")
+        c1, c2, c3 = st.columns(3)
+        c1.markdown("🔴 **Tiefrot:** Die KI ist sich sicher: **Ausschuss** (Wahrscheinlichkeit nahe 0).")
+        c2.markdown("🟡 **Gelb/Beige:** Grauzone / Unsicherheit. Hier ist die Entscheidung 'knapp'.")
+        c3.markdown("🟢 **Tiefgrün:** Die KI ist sich sicher: **Gutteil** (Wahrscheinlichkeit nahe 1).")
+        st.info("**Experten-Tipp:** Beobachte während des Trainings, wie die gelben Übergangszonen schmaler werden. Das bedeutet, dass die KI lernt, schärfere Grenzen zwischen den Qualitäten zu ziehen.")
