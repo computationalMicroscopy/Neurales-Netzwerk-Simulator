@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="KI-Produktions-Check", layout="wide")
 
 # --- Header mit Szenario ---
-st.title("🧠 Schulung: Neuronale Netze in der Produktion")
+st.title("Neuronale Netze in der Produktion")
 with st.expander("📖 Szenario-Beschreibung (Hier klicken für Details)", expanded=True):
     st.markdown("""
     ### Das Ziel: Automatische Qualitätskontrolle
