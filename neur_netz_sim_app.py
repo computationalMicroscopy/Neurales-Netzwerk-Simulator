@@ -108,7 +108,7 @@ if 'w1' not in st.session_state:
 # --- Training ---
 if train_button:
     with col_map:
-        st.subheader("Die KI lernt die Qualitätsregeln...")
+        st.subheader("Die KI lernt die Qualitätsregeln...Klassifikationsergebnis")
         X, y = get_factory_data()
         w1 = np.random.uniform(-1, 1, size=(2, hidden_nodes))
         w2 = np.random.uniform(-1, 1, size=(hidden_nodes, 1))
